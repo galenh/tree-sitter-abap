@@ -6428,22 +6428,6 @@
         ]
       }
     },
-    "bol_comment": {
-      "type": "TOKEN",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "STRING",
-            "value": "*"
-          },
-          {
-            "type": "PATTERN",
-            "value": "[^\\n]*"
-          }
-        ]
-      }
-    },
     "name": {
       "type": "TOKEN",
       "content": {
@@ -6469,21 +6453,34 @@
   },
   "extras": [
     {
-      "type": "PATTERN",
-      "value": "\\s+"
-    },
-    {
       "type": "SYMBOL",
-      "name": "eol_comment"
+      "name": "_whitespace"
     },
     {
       "type": "SYMBOL",
       "name": "bol_comment"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "eol_comment"
     }
   ],
   "conflicts": [],
   "precedences": [],
-  "externals": [],
+  "externals": [
+    {
+      "type": "SYMBOL",
+      "name": "_whitespace"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "bol_comment"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "error_sentinel"
+    }
+  ],
   "inline": [],
   "supertypes": []
 }

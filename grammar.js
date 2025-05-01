@@ -3,7 +3,9 @@ module.exports = grammar({
 
   word: $ => $.name,
 
-  extras: $ => [/\s+/, $.eol_comment, $.bol_comment],
+  externals: $ => [ $._whitespace, $.bol_comment, $.error_sentinel ],
+  
+  extras: $ => [ $._whitespace, $.bol_comment, $.eol_comment],
 
   rules: {
     program: $ => repeat($._statement),
@@ -940,8 +942,6 @@ module.exports = grammar({
     character_literal: $ => /'[^']+'/,
 
     eol_comment: _ => token(seq('"', /[^\n]*/)),
-
-    bol_comment: _ => token(seq("*", /[^\n]*/)),
 
     name: $ => token(prec(-1, /[a-zA-Z_][a-zA-Z0-9_]*/)),
 
