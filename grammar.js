@@ -100,7 +100,8 @@ module.exports = grammar({
         $.constructor_declaration,
         $.method_redefinition,
         alias($.class_method_declaration_class, $.class_method_declaration),
-        $.class_constructor_declaration
+        $.class_constructor_declaration,
+        $.chained_interface_declaration
       ),
 
     class_implementation: $ =>
@@ -263,6 +264,17 @@ module.exports = grammar({
         "."
       ),
 
+    chained_interface_declaration: $ =>
+      seq(
+        kw("interfaces"),
+        ":",
+        seq($.interface, repeat(seq(",", $.interface))),
+        ".",
+      ),
+  
+    interface: $ =>
+      field("name", $.name),
+  
     interface_declaration: $ =>
       seq(
         kw("interface"),
@@ -383,11 +395,14 @@ module.exports = grammar({
       seq(
         kw("data"),
         ":",
-        repeat1(choice($.variable, seq(",", $.variable))),
+        seq($.variable, repeat(seq(",", $.variable))),
         "."
       ),
 
-    variable: $ => seq($.name, alias($._data_object_typing, $.typing)),
+    variable: $ =>
+      seq(
+        field("name", $.name),
+        field("typing", alias($._data_object_typing, $.typing))),
 
     chained_structure_declaration: $ =>
       seq(
@@ -395,13 +410,13 @@ module.exports = grammar({
         ":",
         kw("begin"),
         kw("of"),
-        alias($.name, $.strucure_name),
+        alias($.name, $.structure_name),
         optional(kw("read-only")),
         ",",
         alias(repeat1($.structure_component), $.structure_components),
         kw("end"),
         kw("of"),
-        alias($.name, $.strucure_name),
+        alias($.name, $.structure_name),
         "."
       ),
 
@@ -419,7 +434,7 @@ module.exports = grammar({
       seq(
         kw("field-symbols"),
         ":",
-        repeat1(choice($.field_symbol, seq(",", $.field_symbol))),
+        seq($.field_symbol, repeat(seq(",", $.field_symbol))),
         "."
       ),
 
@@ -571,7 +586,7 @@ module.exports = grammar({
     table_expression: $ =>
       seq(
         field("itab", $.name),
-        token.immediate("[ "),
+        token.immediate("["),
         //"[",
         field(
           "line_spec",
@@ -614,7 +629,7 @@ module.exports = grammar({
 
     _select_target: $ =>
       choice(
-        seq(kw("into"), " ( ", $.name, repeat(seq(",", $.name)), " ) "),
+        seq(kw("into"), "(", $.name, repeat(seq(",", $.name)), ")"),
         seq(
           kw("into"),
           optional(seq(kw("corresponding"), kw("fields"), kw("of"))),
@@ -721,12 +736,7 @@ module.exports = grammar({
         kw("write"),
         ":",
         optional("/"),
-        repeat1(
-          choice(
-            $._general_expression_position,
-            seq(",", $._general_expression_position)
-          )
-        ),
+        seq($._general_expression_position, repeat(seq(",", $._general_expression_position))),
         "."
       ),
 
@@ -899,13 +909,13 @@ module.exports = grammar({
       ),
 
     macro_include: $ =>
-      seq(
+      prec(-10, seq(
         field("name", $.name),
         optional(
           alias(repeat1($._general_expression_position), $.parameter_list)
         ),
         "."
-      ),
+      )),
 
     //_marco_parameter_list: $ => repeat1($._general_expression_position),
 
@@ -929,13 +939,13 @@ module.exports = grammar({
 
     character_literal: $ => /'[^']+'/,
 
-    eol_comment: $ => seq('"', /[^\n]*/),
+    eol_comment: _ => token(seq('"', /[^\n]*/)),
 
-    bol_comment: $ => seq("*", /[^\n]*/),
+    bol_comment: _ => token(seq("*", /[^\n]*/)),
 
-    name: $ => /[a-zA-Z_][a-zA-Z0-9_]{0,29}/i,
+    name: $ => token(prec(-1, /[a-zA-Z_][a-zA-Z0-9_]*/)),
 
-    field_symbol_name: $ => /<[a-zA-Z0-9_]{0,28}>/i,
+    field_symbol_name: $ => token(prec(-1, /<[a-zA-Z0-9_]*>/)),
   },
 });
 
@@ -944,5 +954,14 @@ module.exports = grammar({
  * @param {string} word ABAP word as string
  */
 function kw(word) {
-  return alias(new RegExp(word, "i"), word);
+  const pattern = word
+    .split('')
+    .map(c => {
+      const lower = c.toLowerCase();
+      const upper = c.toUpperCase();
+      return lower === upper ? c : `[${upper}${lower}]`;
+    })
+    .join('');
+  const name = word.replace('-','_');
+  return alias(token(new RegExp(pattern)), name);
 }
